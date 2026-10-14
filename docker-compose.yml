@@ -1,0 +1,25 @@
+services:
+  agenda:
+    image: ghcr.io/jbkunama1/trt.agenda:latest
+    container_name: trt-agenda
+    ports:
+      - "8288:8000"
+    environment:
+      EDIT_PASSWORD: ${EDIT_PASSWORD:?Bitte EDIT_PASSWORD setzen}
+      FRAME_ANCESTORS: "${FRAME_ANCESTORS:-*}"
+      DATABASE: /data/agenda.sqlite3
+    volumes:
+      - agenda_data:/data
+    networks:
+      - highfishNetwork
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+volumes:
+  agenda_data:
+networks:
+  highfishNetwork:
+    external: true

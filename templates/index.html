@@ -1,0 +1,5 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Agenda</title><link rel="stylesheet" href="/static/style.css"><script src="/static/app.js" defer></script></head>
+<body><main><header><div><span class="eyebrow">SCHRITT FÜR SCHRITT</span><h1 id="heading">Agenda</h1><p id="summary" aria-live="polite"></p></div><button id="edit" class="ghost">Bearbeiten</button></header>
+<section id="editor" hidden><label>Bearbeitungsschlüssel<input id="key" type="password" autocomplete="off" placeholder="Nur für diesen Tab"></label><div class="settings"><label>Titel<input id="title" maxlength="120" required></label><label>Startzeit<input id="start" type="time" required></label></div><p class="hint">Dauer je Punkt in Minuten · Uhrzeiten werden automatisch berechnet.</p></section>
+<ol id="list"></ol><section id="actions" hidden><button id="add" class="ghost">+ Punkt hinzufügen</button><button id="save">Speichern</button><button id="cancel" class="ghost">Abbrechen</button></section><p id="status" role="status"></p><footer>Ein Schritt nach dem anderen.</footer></main></body></html>
