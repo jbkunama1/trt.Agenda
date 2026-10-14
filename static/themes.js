@@ -1,15 +1,13 @@
-(()=>{
+window.AgendaUI=(()=>{
  const themes=['ocean','graphite','paper','forest','sunset'];
- const requested=new URLSearchParams(location.search).get('theme');
- let saved='ocean';try{saved=localStorage.getItem('agenda-theme')||'ocean';}catch{}
- let current=themes.includes(requested)?requested:(themes.includes(saved)?saved:'ocean');
- document.documentElement.dataset.theme=current;
- document.addEventListener('DOMContentLoaded',()=>{
-  if(new URLSearchParams(location.search).has('embed'))document.body.classList.add('embed');
-  const select=document.getElementById('theme-select');
-  const link=document.getElementById('view-link');
-  function apply(){document.documentElement.dataset.theme=current;if(link)link.href='/static/view.html?theme='+encodeURIComponent(current);}
-  apply();
-  if(select){select.value=current;select.addEventListener('change',()=>{if(!themes.includes(select.value))return;current=select.value;apply();try{localStorage.setItem('agenda-theme',current);}catch{}const url=new URL(location.href);url.searchParams.set('theme',current);history.replaceState(null,'',url);});}
- });
+ const raw=new URLSearchParams(location.search).get('agenda')||'1';
+ const valid=['1','2','3','4','5'].includes(raw);
+ const id=valid?Number(raw):null;
+ function theme(value){document.documentElement.dataset.theme=themes.includes(value)?value:'ocean';}
+ function el(tag,cls,text){const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;}
+ function clock(total){const days=Math.floor(total/1440);return String(Math.floor(total/60)%24).padStart(2,'0')+':'+String(total%60).padStart(2,'0')+(days?' (+'+days+' Tag'+(days>1?'e':'')+')':'');}
+ function summary(data){const start=Number(data.start.slice(0,2))*60+Number(data.start.slice(3));const total=data.items.reduce((s,i)=>s+i.minutes,0);return data.items.length+' Punkte · '+total+' Minuten · '+data.start+'–'+clock(start+total);}
+ theme('ocean');
+ document.addEventListener('DOMContentLoaded',()=>{if(new URLSearchParams(location.search).has('embed'))document.body.classList.add('embed');});
+ return {themes,id,theme,el,clock,summary};
 })();

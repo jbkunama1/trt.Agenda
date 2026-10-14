@@ -1,31 +1,27 @@
-# View-Seite und fünf Themes
+# Fünf Agenden mit gespeicherten Themes
 
-Neben Bearbeiten stehen ein View-Link und eine Theme-Auswahl. View öffnet einen neuen Tab, damit die Editor-Seite erhalten bleibt. Die View-Seite zeigt nur Titel, Zusammenfassung, Agenda-Punkte, Uhrzeiten und Dauern. Keine Navigation, Theme-Auswahl, Bearbeitung oder Fußzeile. Nur bei Ladeproblemen erscheint eine Fehlermeldung. Aktualisierung alle 15 Sekunden; unveränderte Daten werden nicht neu gerendert. View liest die zuletzt gespeicherte Agenda; ungespeicherte Editor-Änderungen erscheinen dort nicht.
+Es gibt fünf feste Agenda-Plätze 1–5. Agenda 1 enthält die bisherige Agenda; 2–5 starten leer mit Titel Agenda 2 usw. Im Dropdown auswählen, Bearbeiten öffnen, Titel/Startzeit/Punkte/Theme setzen und Speichern. Platz wieder leeren: Punkte entfernen, Titel anpassen und speichern. Kein physisches Löschen, keine dynamischen IDs.
 
-## Themes
+Themes Ocean, Graphite, Paper, Forest und Sunset sind unverändert verfügbar, jetzt ausschließlich im Bearbeitungsbereich. Theme wird mit der Agenda in SQLite gespeichert. View und iFrame verwenden immer das gespeicherte Theme. Keine Browser-Präferenz und kein theme-URL-Override mehr. Bisherige lokale Auswahl wird nicht migriert; nach dem Update gewünschtes Theme einmal im Editor speichern.
 
-| Name / URL-Wert | Gestaltung |
-|---|---|
-| Ocean / ocean | Blauer Gradient, weiche Rundungen; Standard |
-| Graphite / graphite | Anthrazit und Türkis, eckige Buttons und Karten |
-| Paper / paper | Weiß/Hellblau, dunkelblaue Akzente, fast eckig |
-| Forest / forest | Grüner Verlauf, kleine Rundungen |
-| Sunset / sunset | Violett/Orange, kräftige Akzente, größere Rundungen |
+Beim Bearbeiten ist die Agenda-Auswahl gesperrt. Theme ist vor Speichern nur Vorschau im Editor; View bleibt auf dem gespeicherten Stand. Abbrechen lädt Datenbankstand neu. Schreibschlüssel gilt für alle fünf Agenden. Jede Agenda hat eigenen Versionskonfliktschutz.
 
-Auswahl wird pro Browser in localStorage gespeichert, nicht global in SQLite. Kein Schreibschlüssel nötig, da nur die eigene Darstellung geändert wird. Wenn Browser-Speicher blockiert ist, funktioniert die Auswahl für die aktuelle Seite weiterhin. Ein gültiger URL-Parameter theme hat Vorrang vor der Browser-Präferenz. View-Link übernimmt das gewählte Theme in die URL; so ist die Darstellung auch auf einem anderen Gerät oder im iFrame festgelegt. Ungültige Werte fallen auf gültige Browser-Präferenz oder Ocean zurück. Native Dropdown-Popups können je nach Betriebssystem unterschiedlich aussehen.
-
-## URLs und Einbettung
+## Links
 
 ```text
-http://SERVER-IP:8288/static/view.html?theme=graphite
-http://SERVER-IP:8288/?theme=paper
-http://SERVER-IP:8288/?embed=1&theme=forest
+http://SERVER-IP:8288/?agenda=2
+http://SERVER-IP:8288/static/view.html?agenda=2
+http://SERVER-IP:8288/?embed=1&agenda=2
 ```
 
 ```html
-<iframe src="https://agenda.example.de/static/view.html?theme=sunset" title="Agenda" style="width:100%;height:640px;border:0;"></iframe>
+<iframe src="https://agenda.example.de/static/view.html?agenda=2" title="Agenda 2" style="width:100%;height:640px;border:0;"></iframe>
 ```
 
-Bestehende ?embed=1-Links bleiben nutzbar; auch dort sind Toolbar und Fußzeile ausgeblendet. FRAME_ANCESTORS, HTTPS und Proxy-Freigaben gelten weiterhin. View ist keine zusätzliche Zugriffssicherung: Die Agenda ist wie bisher öffentlich lesbar.
+Ohne agenda-Parameter wird Agenda 1 angezeigt. Alte Links bleiben so für Agenda 1 nutzbar. Alte theme-Parameter werden ignoriert. View zeigt nur gespeicherte Agenda, aktualisiert alle 15 Sekunden, enthält keine Toolbar, keine Theme-Auswahl und keine Fußzeile. Ungültige Agenda-ID zeigt Fehler, nicht eine andere Agenda.
 
-Nach erfolgreichem GHCR-Build das Image in Portainer neu ziehen und den Stack aktualisieren. Port 8288, highfishNetwork, Backend und SQLite-Schema bleiben unverändert. Keine Datenbankmigration. GitHub-Pages-Projektseite bleibt unverändert. Visuelle Browser-Prüfung und Docker-Laufzeitprüfung sind zum Zeitpunkt der Vorbereitung nicht bestätigt.
+## Migration und Update
+
+Vor Update SQLite sichern. Beim ersten Datenbankzugriff entsteht Tabelle agendas mit IDs 1–5. Die alte Tabelle agenda bleibt unverändert erhalten; body und version von Agenda 1 werden übernommen, theme wird standardmäßig ocean. INSERT OR IGNORE verhindert späteres Überschreiben. Die alte Tabelle ist nur Altbestand, keine laufende Sicherung. Nach Migration keine alte App-Version zum Bearbeiten verwenden: sie schreibt in die alte Tabelle und Änderungen würden auseinanderlaufen. Rückkehr nur mit bewusstem Backup-/Restore-Plan.
+
+Port 8288, Netzwerk highfishNetwork und Volume agenda_data bleiben gleich. Nach erfolgreichen CI-Tests/GHCR-Build neues Image ziehen und Stack aktualisieren. Migration läuft beim App-Zugriff auf dem Zielserver, nicht beim GitHub-Upload. Tests für Migration, fünf getrennte Agenden, Themes und Konflikte sind enthalten; CI-Erfolg, Live-Migration und Browserdarstellung noch nicht bestätigt. GitHub-Pages-Projektseite ist weiterhin eine statische Präsentation und wird mit dieser Änderung nicht aktualisiert.
