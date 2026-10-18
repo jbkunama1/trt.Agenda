@@ -5,7 +5,8 @@ app=Flask(__name__)
 app.config['MAX_CONTENT_LENGTH']=100_000
 DB=os.environ.get('DATABASE','/data/agenda.sqlite3')
 PASSWORD=os.environ.get('EDIT_PASSWORD','')
-THEMES=('ocean','graphite','paper','forest','sunset')
+THEMES=('ocean','graphite','paper','forest','sunset','70s','80s','90s','modern','cyberpunk','neon','terminal','pastell')
+LAYOUTS=('list','columns','timeline','tiles')
 if not PASSWORD:
     raise RuntimeError('EDIT_PASSWORD muss gesetzt sein.')
 Path(DB).parent.mkdir(parents=True,exist_ok=True)
@@ -21,7 +22,7 @@ def connect():
                 con.execute('INSERT OR IGNORE INTO agendas VALUES (1,?,?)',(json.dumps(data),old[1]))
         for ident in range(1,6):
             items=[{'title':t,'minutes':m} for t,m in [('Ankommen',5),('Einstieg',10),('Arbeitsphase',8),('Austausch',12),('Abschluss',5)]] if ident==1 else []
-            data={'title':'Unsere Agenda' if ident==1 else f'Agenda {ident}','start':'08:00','theme':'ocean','items':items}
+            data={'title':'Unsere Agenda' if ident==1 else f'Agenda {ident}','start':'08:00','theme':'ocean','layout':'list','items':items}
             con.execute('INSERT OR IGNORE INTO agendas VALUES (?,?,0)',(ident,json.dumps(data)))
         con.commit()
         return con
@@ -36,7 +37,9 @@ def ident():
 
 def read(con,number):
     body,version=con.execute('SELECT body,version FROM agendas WHERE id=?',(number,)).fetchone()
-    return {'id':number,'data':json.loads(body),'version':version}
+    data=json.loads(body)
+    if data.get('layout') not in LAYOUTS:data['layout']='list'
+    return {'id':number,'data':data,'version':version}
 
 @app.get('/')
 def index():
@@ -65,18 +68,23 @@ def validate(payload):
     data=payload.get('data');version=payload.get('version')
     if not isinstance(data,dict) or type(version) is not int or version<0:raise ValueError()
     title,start,items=data.get('title'),data.get('start'),data.get('items')
-    theme=data.get('theme','ocean')
+    theme=data.get('theme','ocean');layout=data.get('layout','list')
     if not isinstance(title,str) or not 1<=len(title.strip())<=120:raise ValueError()
     if not isinstance(start,str) or not re.fullmatch(r'([01]\d|2[0-3]):[0-5]\d',start):raise ValueError()
     if not isinstance(theme,str) or theme not in THEMES:raise ValueError()
+    if not isinstance(layout,str) or layout not in LAYOUTS:raise ValueError()
     if not isinstance(items,list) or len(items)>50:raise ValueError()
     clean=[]
     for item in items:
         if not isinstance(item,dict):raise ValueError()
         t,m=item.get('title'),item.get('minutes')
         if not isinstance(t,str) or not 1<=len(t.strip())<=160 or type(m) is not int or not 1<=m<=1440:raise ValueError()
-        clean.append({'title':t.strip(),'minutes':m})
-    return {'title':title.strip(),'start':start,'theme':theme,'items':clean},version
+        entry={'title':t.strip(),'minutes':m}
+        emoji=item.get('emoji','')
+        if not isinstance(emoji,str) or len(emoji.strip())>16 or any(ord(ch)<32 for ch in emoji):raise ValueError()
+        if emoji.strip():entry['emoji']=emoji.strip()
+        clean.append(entry)
+    return {'title':title.strip(),'start':start,'theme':theme,'layout':layout,'items':clean},version
 @app.put('/api/agenda')
 def save_agenda():
     if not secrets.compare_digest(request.headers.get('X-Edit-Key','').encode(),PASSWORD.encode()):
@@ -84,7 +92,7 @@ def save_agenda():
     try:
         number=ident();clean,version=validate(request.get_json(silent=True))
     except ValueError:
-        return jsonify(error='Agenda, Titel, Startzeit, Theme und Dauer prüfen.'),400
+        return jsonify(error='Agenda, Titel, Startzeit, Theme, Layout, Emoji und Dauer prüfen.'),400
     con=connect()
     try:
         cur=con.execute('UPDATE agendas SET body=?,version=version+1 WHERE id=? AND version=?',(json.dumps(clean),number,version))
